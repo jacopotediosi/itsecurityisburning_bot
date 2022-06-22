@@ -1,8 +1,10 @@
 import logging
 import MySQLdb
 import os
+import time
 from apscheduler.triggers.cron import CronTrigger
 from datetime import timedelta
+from MySQLdb.constants import CR as MySQLdb_CR
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.ext import ApplicationBuilder, CallbackContext, CallbackQueryHandler, CommandHandler, ContextTypes
@@ -15,14 +17,22 @@ logging.basicConfig(
 )
 
 
-db = MySQLdb.connect(
-    host     = os.environ.get("MYSQL_HOST"),
-    user     = os.environ.get("MYSQL_USER"),
-    password = os.environ.get("MYSQL_PASSWORD"),
-    database = os.environ.get("MYSQL_DATABASE"),
-    autocommit=True,
-    charset='utf8mb4'
-)
+while True:
+    try:
+        db = MySQLdb.connect(
+            host     = os.environ.get("MYSQL_HOST"),
+            user     = os.environ.get("MYSQL_USER"),
+            password = os.environ.get("MYSQL_PASSWORD"),
+            database = os.environ.get("MYSQL_DATABASE"),
+            autocommit=True,
+            charset='utf8mb4'
+        )
+        break
+    except MySQLdb._exceptions.OperationalError as e:
+        if e.args[0] != MySQLdb_CR.CONN_HOST_ERROR:
+            raise
+        logging.info("Waiting for DB to go UP...")
+        time.sleep(10)
 cursor = db.cursor()
 
 
