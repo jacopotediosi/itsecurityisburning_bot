@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+    python:
+        build: './python'
+        depends_on:
+            - db
+        restart: always
+        read_only: true
+        env_file:
+            - production_env/common.env
+            - production_env/python.env
+        logging:
+            driver: "json-file"
+            options:
+                max-file: "1"
+                max-size: "20m"
+    db:
+        restart: always
+        image: mariadb
+        command: --default-authentication-plugin=mysql_native_password
+        env_file:
+            - production_env/common.env
+            - production_env/db.env
+        volumes:
+            - ./db/mysql/:/var/lib/mysql:rw
+            - ./db/sql/:/docker-entrypoint-initdb.d/:ro
+        logging:
+            driver: "json-file"
+            options:
+                max-file: "1"
+                max-size: "10m"
+        healthcheck:
+            test: "mysqladmin status -u $$MYSQL_USER -p$$MYSQL_PASSWORD || exit 1"
+            timeout: 10s
+            interval: 1m30s
+            retries: 2
+
+networks:
+    default:
+        driver_opts:
+            com.docker.network.bridge.name: itsecurityis
